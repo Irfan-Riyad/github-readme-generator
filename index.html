@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GitHub README Generator</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    :root{
+      --bg:#f9f9f9;
+      --card:#ffffff;
+      --text:#333;
+      --muted:#666;
+      --border:#ddd;
+      --accent:#0d6efd;
+    }
+
+    /* Base */
+    *{box-sizing:border-box}
+    body{
+      font-family: Arial, sans-serif;
+      margin: 2rem;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height:1.5;
+    }
+    h1{
+      text-align:center;
+      font-size: clamp(1.25rem, 2.4vw, 2rem);
+      margin:0 0 1.25rem;
+    }
+
+    /* Layout wrapper to center content and limit width */
+    .container{
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    /* Sections as cards */
+    .section{
+      margin-bottom: 1.25rem;
+      background: var(--card);
+      border:1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+    }
+
+    label{
+      display:block;
+      margin-top: 0.75rem;
+      font-weight:600;
+    }
+
+    textarea, input, select{
+      width:100%;
+      padding:0.65rem 0.75rem;
+      margin-top:0.5rem;
+      border:1px solid var(--border);
+      border-radius:8px;
+      background:#fff;
+      color: var(--text);
+      font-size: 0.95rem;
+    }
+    textarea{ min-height: 80px; resize: vertical; }
+
+    /* Checkboxes row */
+    .checkbox-group{
+      display:flex;
+      flex-wrap:wrap;
+      gap:0.75rem 1rem;
+      margin-top:0.5rem;
+    }
+    .checkbox-group label{
+      display:flex;
+      align-items:center;
+      gap:0.5rem;
+      font-weight:500;
+      margin-top:0;
+      border:1px solid var(--border);
+      padding:0.5rem 0.75rem;
+      border-radius:10px;
+      background:#fff;
+    }
+
+    /* Buttons */
+    .actions{
+      display:flex;
+      gap:0.75rem;
+      flex-wrap:wrap;
+      margin: 0.25rem 0 1rem;
+    }
+    button{
+      appearance:none;
+      border:none;
+      background: var(--accent);
+      color:#fff;
+      padding:0.75rem 1rem;
+      border-radius:10px;
+      cursor:pointer;
+      font-size:1rem;
+      font-weight:600;
+      transition: transform .04s ease, opacity .2s ease;
+    }
+    button.secondary{
+      background:#222;
+    }
+    button:active{ transform: translateY(1px); }
+    button:disabled{ opacity:.6; cursor:not-allowed; }
+
+    /* Preview */
+    #preview{
+      border-top:2px solid #ccc;
+      padding-top:1rem;
+      background-color: var(--card);
+      border:1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      overflow:auto;
+    }
+    #preview img{ max-width:100%; height:auto; }
+
+    /* Two-column feel on wide screens (optional) */
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:1rem;
+    }
+
+    /* Responsive tweaks */
+    @media (max-width: 768px){
+      body{ margin:1rem; }
+      .grid{ grid-template-columns: 1fr; }
+    }
+    @media (max-width: 480px){
+      .actions{ flex-direction:column; }
+      button{ width:100%; }
+      textarea, input, select{ font-size: 1rem; }
+      .section{ padding:0.85rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📄 GitHub Profile README Generator</h1>
+
+    <!-- Group form controls in a responsive grid -->
+    <div class="grid">
+      <div class="section">
+        <label><input type="checkbox" id="showAbout" checked> Include About Me</label>
+        <input type="text" id="name" placeholder="Your Name" />
+        <textarea id="bio" rows="2" placeholder="Short bio"></textarea>
+
+        <label><input type="checkbox" id="showProject" checked> Include Current Project</label>
+        <textarea id="project" rows="2" placeholder="What you're working on"></textarea>
+
+        <label><input type="checkbox" id="showLearning" checked> Include Learning</label>
+        <textarea id="learning" rows="2" placeholder="What you're learning"></textarea>
+
+        <label>GitHub Username</label>
+        <input type="text" id="username" placeholder="your-github-username" />
+
+        <label><input type="checkbox" id="showContact" checked> Include Contact</label>
+        <textarea id="contact" rows="2" placeholder="Email, LinkedIn, Website"></textarea>
+      </div>
+
+      <div class="section">
+        <label><input type="checkbox" id="showSkills" checked> Include Skills</label>
+        <textarea id="skills" placeholder="e.g., html,css,js,react,python" rows="2"></textarea>
+
+        <label>Include GitHub Features</label>
+        <div class="checkbox-group">
+          <label><input type="checkbox" id="showStats"> GitHub Stats</label>
+          <label><input type="checkbox" id="showStreak"> GitHub Streak</label>
+          <label><input type="checkbox" id="showGraph"> Contribution Graph</label>
+          <label><input type="checkbox" id="showLangs"> Top Languages</label>
+        </div>
+
+        <label style="margin-top:1rem;">Download as</label>
+        <select id="fileType">
+          <option value="md">Markdown (.md)</option>
+          <option value="txt">Text (.txt)</option>
+        </select>
+
+        <div class="actions">
+          <button onclick="updatePreview()">Generate README</button>
+          <button class="secondary" onclick="downloadREADME()">Download</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section" id="preview"></div>
+  </div>
+
+  <script>
+    function generateMarkdown() {
+      const name = document.getElementById("name").value || "Your Name";
+      const bio = document.getElementById("bio").value;
+      const project = document.getElementById("project").value;
+      const learning = document.getElementById("learning").value;
+      const username = document.getElementById("username").value;
+      const contact = document.getElementById("contact").value;
+      const skills = document.getElementById("skills").value.replace(/\s+/g,'');
+
+      const showAbout = document.getElementById("showAbout").checked;
+      const showProject = document.getElementById("showProject").checked;
+      const showLearning = document.getElementById("showLearning").checked;
+      const showContact = document.getElementById("showContact").checked;
+      const showSkills = document.getElementById("showSkills").checked;
+
+      const showStats = document.getElementById("showStats").checked;
+      const showStreak = document.getElementById("showStreak").checked;
+      const showGraph = document.getElementById("showGraph").checked;
+      const showLangs = document.getElementById("showLangs").checked;
+
+      let md = `# 👋 Hi, I'm ${name}\n\n`;
+
+      if (showAbout && bio.trim()) {
+        md += `## 🧠 About Me\n${bio}\n\n`;
+      }
+      if (showProject && project.trim()) {
+        md += `## 🔭 Currently Working On\n${project}\n\n`;
+      }
+      if (showLearning && learning.trim()) {
+        md += `## 🌱 Currently Learning\n${learning}\n\n`;
+      }
+      if (showSkills && skills.trim()) {
+        md += `## 🛠️ Skills\n<p align="left">\n  <img src="https://skillicons.dev/icons?i=${skills}" height="40" alt="skills" />\n</p>\n\n`;
+      }
+
+      if (showStats || showStreak || showGraph || showLangs) {
+        md += `## 📈 GitHub Analytics\n\n`;
+        if (showGraph && username.trim()) {
+          md += `### 🔥 Contribution Graph\n[![GitHub Activity Graph](https://github-readme-activity-graph.vercel.app/graph?username=${encodeURIComponent(username)}&theme=react-dark)](https://github.com/ashutosh00710/github-readme-activity-graph)\n\n`;
+        }
+        if (showStreak && username.trim()) {
+          md += `### 💖 GitHub Streak\n[![GitHub Streak](https://github-readme-streak-stats.herokuapp.com/?user=${encodeURIComponent(username)}&theme=default)](https://git.io/streak-stats)\n\n`;
+        }
+        if (showStats && username.trim()) {
+          md += `### 📚 GitHub Stats\n![GitHub Stats](https://github-readme-stats.vercel.app/api?username=${encodeURIComponent(username)}&show_icons=true&theme=default)\n\n`;
+        }
+        if (showLangs && username.trim()) {
+          md += `### 📦 Top Languages\n![Top Languages](https://github-readme-stats.vercel.app/api/top-langs/?username=${encodeURIComponent(username)}&layout=compact)\n\n`;
+        }
+      }
+
+      if (showContact && contact.trim()) {
+        md += `## 📫 Contact Me\n${contact}`;
+      }
+
+      return md;
+    }
+
+    function updatePreview() {
+      document.getElementById("preview").innerHTML = marked.parse(generateMarkdown());
+    }
+
+    function downloadREADME() {
+      const content = generateMarkdown();
+      const fileType = document.getElementById("fileType").value;
+      const blob = new Blob([content], { type: "text/plain" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = fileType === "md" ? "README.md" : "README.txt";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(link.href);
+    }
+  </script>
+</body>
+</html>
